@@ -1,0 +1,50 @@
+
+This software computes the quantization determinant involving
+the box matrix B and the Ktilde matrix which relates two-particle
+interaction energies in finite volume to the scattering matrix.
+An overview of this software is given in the paper below:
+
+
+@article{Morningstar:2017,
+      author         = {Morningstar, Colin and Bulava, John and Singha, Bijit and
+                        Brett, Ruair\'i and Fallica, Jacob and Hanlon, Andrew and
+                        H\"orz, Ben},
+      title          = {Estimating the two-particle $K$-matrix 
+                        for multiple partial waves and decay channels 
+                        from finite-volume energies},
+      journal        = "Nucl. Phys. B",
+      volume         = "???",
+      year           = "2017",
+      pages          = "???",
+      doi            = "???"
+}
+
+
+
+See comments in the file "box_quant.h" for information on the
+important class "BoxQuantization".
+
+See comments in the file "box_matrix.h" for information on the
+class "BoxMatrix".
+
+See comments in the file "K_matrix.h" for information on the
+classes "KtildeMatrixCalculator" and "KtildeInverseCalculator".
+
+There are two sample driver programs "driver1.cc" and "driver2.cc".
+"driver1.cc" creates the needed objects from XML input given in
+"input1.xml".  "driver2.cc" creates the objects in the code itself.
+
+Tables of the block diagonal basis states and explicit expressions
+for the box matrix elements are given in the file "box_matrix.pdf".
+
+
+
+The software may be used under the terms of the GNU General Public 
+Licence (GPL).  If you use this code, please cite the reference
+mentioned at the top of this file.
+
+
+Colin Morningstar
+Dept of Physics
+Carnegie Mellon University
+July 2017
