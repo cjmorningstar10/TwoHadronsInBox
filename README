@@ -20,15 +20,17 @@ An overview of this software is given in the paper below:
 }
 
 
+See comments in the header files for information on each class
+and required XML forms.
 
-See comments in the file "box_quant.h" for information on the
-important class "BoxQuantization".
+   File           Important classes
+   ----           -----------------
+box_quant.h       BoxQuantization, DecayChannelInfo
+box_matrix.h      BoxMatrix
+K_matrix_info.h   KElementInfo, KIndex, KFitParamInfo
+K_matrix_calc.h   KtildeMatrixCalculator, KtildeInverseCalculator
+fit_forms.h       FitForm, Polynomial, SumOfPoles, SumOfPolesPlusPolynomial
 
-See comments in the file "box_matrix.h" for information on the
-class "BoxMatrix".
-
-See comments in the file "K_matrix.h" for information on the
-classes "KtildeMatrixCalculator" and "KtildeInverseCalculator".
 
 There are two sample driver programs "driver1.cc" and "driver2.cc".
 "driver1.cc" creates the needed objects from XML input given in
@@ -43,8 +45,11 @@ The software may be used under the terms of the GNU General Public
 Licence (GPL).  If you use this code, please cite the reference
 mentioned at the top of this file.
 
+Please report bugs/comments to colin_morningstar@cmu.edu
+
 
 Colin Morningstar
 Dept of Physics
 Carnegie Mellon University
 July 2017
+
