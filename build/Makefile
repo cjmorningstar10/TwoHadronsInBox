@@ -77,7 +77,7 @@ OBJS = $(SRCS:.cc=.o)
 all:  driver1 driver2
 
 driver%: driver%.cc $(OBJS)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(LIBS) -o driver$* ../source/driver$*.cc $(OBJS)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o driver$* ../source/driver$*.cc $(OBJS) $(LIBS) 
 
   #  do not optimize these routines (very long compile time)
 
