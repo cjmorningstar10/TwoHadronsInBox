@@ -1,1 +1,70 @@
-file
+<Driver1>
+
+  <KtildeMatrixInverse>
+    <Element>
+      <KElementInfo>
+        <JTimesTwo>2</JTimesTwo>
+        <KIndex>L(1) 2S(0) chan(0)</KIndex>
+        <KIndex>L(1) 2S(0) chan(0)</KIndex>
+      </KElementInfo>
+      <FitForm><Polynomial><Powers>1 3</Powers></Polynomial></FitForm>
+    </Element>
+    <Element>
+      <KElementInfo>
+        <JTimesTwo>6</JTimesTwo>
+        <KIndex>L(3) 2S(0) chan(0)</KIndex>
+        <KIndex>L(3) 2S(0) chan(0)</KIndex>
+      </KElementInfo>
+      <FitForm><Polynomial><Degree>0 </Degree></Polynomial></FitForm>
+    </Element>
+    <Element>
+      <KElementInfo>
+        <JTimesTwo>10</JTimesTwo>
+        <KIndex>L(5) 2S(0) chan(0)</KIndex>
+        <KIndex>L(5) 2S(0) chan(0)</KIndex>
+      </KElementInfo>
+      <FitForm><Polynomial><Degree>0</Degree></Polynomial></FitForm>
+    </Element>
+  </KtildeMatrixInverse>
+
+  <BoxQuantization>
+    <TotalMomentumRay>ar</TotalMomentumRay> 
+    <TotalMomentumIntSquared>0</TotalMomentumIntSquared>
+    <LGIrrep>T1u</LGIrrep>
+    <DecayChannel>
+      <Lmax>5</Lmax>
+      <DecayChannelInfo>
+        <Particle1Name>pion</Particle1Name>
+        <Spin1TimesTwo>0</Spin1TimesTwo>
+        <Particle2Name>pion</Particle2Name>
+        <Spin2TimesTwo>0</Spin2TimesTwo>
+        <IntrinsicParities>same</IntrinsicParities>
+      </DecayChannelInfo>
+    </DecayChannel>
+  </BoxQuantization>
+
+  <DoValue>
+    <LengthReference>6.63</LengthReference>
+    <LabEnergyOverReference>3.81234</LabEnergyOverReference>
+    <ChannelMasses>
+      <DecayChannel>
+        <Mass1OverRef>0.673</Mass1OverRef>
+        <Mass2OverRef>1.527</Mass2OverRef>
+      </DecayChannel>
+    </ChannelMasses>
+    <OmegaMu>8.0</OmegaMu>
+  </DoValue>
+
+  <DoValue>
+    <LengthReference>6.63</LengthReference>
+    <LabEnergyOverReference>4.452</LabEnergyOverReference>
+    <ChannelMasses>
+      <DecayChannel>
+        <Mass1OverRef>1.00</Mass1OverRef>
+        <Mass2OverRef>1.00</Mass2OverRef>
+      </DecayChannel>
+    </ChannelMasses>
+    <OmegaMu>8.0</OmegaMu>
+  </DoValue>
+
+</Driver1>
