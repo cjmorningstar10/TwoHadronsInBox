@@ -2,12 +2,20 @@
 #include <fstream>
 using namespace std;
 
-//  driver program.  XML input from file "input1.xml"
+//  Example driver program 1.  Needs input XML file 
+//  of form given in "input1.xml".
+
+//  Name of input XML file should be given as command argument
+//  when running program.
 
 
-int main(){
+int main(int argc, const char* argv[])
+{
+ if (argc!=2){
+    cout << "Needs one command line argument: name of input XML file"<<endl;
+    return 0;}
 
-string fname("input1.xml");
+string fname(argv[1]);
 XMLHandler xmlin;
 xmlin.set_from_file(fname);
 
@@ -33,13 +41,10 @@ cout << BQ.output()<<endl;
 cout << BQ.outputBasis(2)<<endl;
 
 double Elab_over_mref, L_mref, mu;
-uint Ndet;
 
 uint count=0;
-list<XMLHandler> testxml=xmlin.find_among_children("ATest");
-uint ntests=testxml.size();
-vector<ComplexHermitianMatrix> Bs(ntests);
-vector<RealSymmetricMatrix> Kvs(ntests);
+list<XMLHandler> testxml=xmlin.find_among_children("DoValue");
+cout.precision(15);
 
 for (list<XMLHandler>::iterator it=testxml.begin();it!=testxml.end();it++,count++){
 
@@ -47,13 +52,10 @@ for (list<XMLHandler>::iterator it=testxml.begin();it!=testxml.end();it++,count+
 
    xmlread(*it,"LengthReference",L_mref,"Main");
    xmlread(*it,"LabEnergyOverReference",Elab_over_mref,"Main");
-   xmlread(*it,"DetRoot",Ndet,"Main");
    xmlread(*it,"OmegaMu",mu,"Main");
 
    BQ.setRefMassL(L_mref);
    cout << "ref mass times L = "<<BQ.getRefMassL() <<endl;
-   cout << "Ndet = "<<Ndet<<endl;
-   cout << "mu = "<<mu<<endl;
 
    XMLHandler xmlch(*it,"ChannelMasses");
    list<XMLHandler> xmlm=xmlch.find("DecayChannel");
@@ -66,54 +68,12 @@ for (list<XMLHandler>::iterator it=testxml.begin();it!=testxml.end();it++,count+
       cout << "channel "<<chan<<": mass1 = "<<BQ.getMass1OverRef(chan)<<"   "
            << "mass2 = "<<BQ.getMass2OverRef(chan)<<endl;}
 
-   cout.precision(15);
    double Ecm=BQ.getEcmOverMrefFromElab(Elab_over_mref);
-   cout << "Ecm = "<<Ecm<<endl;
-   
-   string outputfile("quant_maple");
-   outputfile+=make_string(count)+string(".mpl");
-   ofstream fout(outputfile);
-   BQ.outputKBMatricesFromElab(Elab_over_mref,fout);
-   fout << "Ndet:="<<Ndet<<":"<<endl;
-   fout << "mu:="<<mu<<":"<<endl;
-   fout.close();
-
-   cout << "Determinant root = "<< BQ.getDeterminantRootFromElab(Elab_over_mref,Ndet)<<endl;
-   cout << "Determinant root = "<< BQ.getDeterminantRootFromEcm(Ecm,Ndet)<<endl;
-   cout << "Omega = "<< BQ.getOmegaFromElab(mu,Elab_over_mref)<<endl;
-   cout << "Omega = "<< BQ.getOmegaFromEcm(mu,Ecm)<<endl;
-
-   vector<double> lam=BQ.getEigenvaluesFromElab(Elab_over_mref);
-   vector<double> lam2=BQ.getEigenvaluesFromEcm(Ecm);
-   for (uint k=0;k<lam.size();k++){
-      cout << " lam["<<k<<"] = "<<lam[k]<<endl;
-      cout << "lam2["<<k<<"] = "<<lam2[k]<<endl;}
-   double detrt=1.0;
-   for (uint k=0;k<lam.size();k++){
-      detrt*=std::pow(std::abs(lam[k]),1.0/double(Ndet))*((lam[k]>0.0)?1.0:-1.0);}
-
-   BQ.getBoxMatrixFromElab(Elab_over_mref,Bs[count]);
-   BQ.getKtildeOrInverseFromEcm(Ecm,Kvs[count]);
-
-   double detBrt=BQ.getBoxMatrixDeterminantRootFromElab(Elab_over_mref,Ndet);
-   cout << "detBroot = "<<detBrt<<endl;
-   cout << "detBroot = "<<BQ.getBoxMatrixDeterminantRootFromEcm(Ecm,Ndet)<<endl;
-   cout << "detBroot = "<<BQ.getBoxMatrixDeterminantRoot(Bs[count],Ndet)<<endl;
-
-//   if (BQ.isKtildeMode()) detrt/=detBrt;
-   cout << "detroot = "<<detrt<<endl;
-
+   cout << "     Elab/mref = "<<Elab_over_mref<<endl;
+   cout << "      Ecm/mref = "<<Ecm<<endl;
+   cout << "            mu = "<<mu<<endl;
+   cout << "         Omega = "<< BQ.getOmegaFromElab(mu,Elab_over_mref)<<endl<<endl;
    }
-
-cout <<endl<<endl<<"Ndet = "<<Ndet<<endl;
-for (uint j=0;j<ntests;j++)
-for (uint k=0;k<ntests;k++)
-    cout <<"DetRoot["<<j<<","<<k<<"] = "<< BQ.getDeterminantRoot(Kvs[j],Bs[k],Ndet)<<endl;
-
-cout <<endl<<endl<<"mu = "<<mu<<endl;
-for (uint j=0;j<ntests;j++)
-for (uint k=0;k<ntests;k++)
-    cout <<"Omega["<<j<<","<<k<<"] = "<< BQ.getOmega(mu,Kvs[j],Bs[k])<<endl;
 
 return 0;
 }
