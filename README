@@ -5,18 +5,22 @@ interaction energies in finite volume to the scattering matrix.
 An overview of this software is given in the paper below:
 
 
-@article{Morningstar:2017,
-      author         = {Morningstar, Colin and Bulava, John and Singha, Bijit and
-                        Brett, Ruair\'i and Fallica, Jacob and Hanlon, Andrew and
-                        H\"orz, Ben},
-      title          = {Estimating the two-particle $K$-matrix 
-                        for multiple partial waves and decay channels 
-                        from finite-volume energies},
-      journal        = "Nucl. Phys. B",
-      volume         = "???",
+@article{Morningstar:2017spu,
+      author         = "Morningstar, Colin and Bulava, John and Singha, Bijit and
+                        Brett, Ruairí and Fallica, Jacob and Hanlon, Andrew and
+                        Hörz, Ben",
+      title          = "{Estimating the two-particle $K$-matrix for multiple
+                        partial waves and decay channels from finite-volume
+                        energies}",
+      journal        = "Nucl. Phys.",
+      volume         = "B924",
       year           = "2017",
-      pages          = "???",
-      doi            = "???"
+      pages          = "477-507",
+      doi            = "10.1016/j.nuclphysb.2017.09.014",
+      eprint         = "1707.05817",
+      archivePrefix  = "arXiv",
+      primaryClass   = "hep-lat",
+      SLACcitation   = "%%CITATION = ARXIV:1707.05817;%%"
 }
 
 
