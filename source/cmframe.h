@@ -25,7 +25,7 @@
   // *                                                                 *
   // *   For d^2 = dx^2 + dy^2 + dz^2, then                            *
   // *                                                                 *
-  // *     P^2/mref^2 = (2*Pi)^2 * d^2 /  ((m1_L+m2_L)/2)^2            *
+  // *         P^2/mref^2 = (2*Pi/(mref_L))^2 * d^2                    *
   // *                                                                 *
   // *   Other useful quantities are  gamma, qcm/mref, u^2, and        *
   // *   svec, defined by                                              *
