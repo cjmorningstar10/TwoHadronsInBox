@@ -36,7 +36,8 @@ CXXFLAGS = -O3 -std=c++11 -Wall -I../source
 DFLAGS = -DAR_LMAX=$(AR_LMAX_VALUE) -DOA_LMAX=$(OA_LMAX_VALUE) \
          -DPD_LMAX=$(PD_LMAX_VALUE) -DCD_LMAX=$(CD_LMAX_VALUE) \
          -DAR_SX2MAX=$(AR_SX2MAX_VALUE) -DOA_SX2MAX=$(OA_SX2MAX_VALUE) \
-         -DPD_SX2MAX=$(PD_SX2MAX_VALUE) -DCD_SX2MAX=$(CD_SX2MAX_VALUE)
+         -DPD_SX2MAX=$(PD_SX2MAX_VALUE) -DCD_SX2MAX=$(CD_SX2MAX_VALUE) \
+	 -fPIC
 LDFLAGS =
 LIBS=-llapack
 
@@ -75,6 +76,9 @@ OBJS = $(SRCS:.cc=.o)
 .SECONDARY: $(OBJS)
 
 all:  driver1 driver2
+
+lib: $(OBJS)
+	$(CXX) $(CXXFLAGS) -shared $(LDFLAGS) -o libBox.so $(OBJS) $(LDFLAGS)
 
 driver%: driver%.cc $(OBJS)
 	$(CXX) $(CXXFLAGS) $(LDFLAGS) -o driver$* ../source/driver$*.cc $(OBJS) $(LIBS) 
