@@ -4,6 +4,7 @@
 #include "xml_handler.h"
 #include "fit_forms.h"
 #include "K_matrix_info.h"
+#include "K_matrix_base.h"
 #include <map>
 
 // ***********************************************************************
@@ -70,12 +71,13 @@
 
 
 
-class KtildeMatrixCalculator
+class KtildeMatrixCalculator : public KtildeMatrixBase
 {
 
     std::map<KElementInfo,FitForm*> m_fit;
     std::vector<KFitParamInfo> m_paraminfo;
     std::map<KFitParamInfo,uint> m_paramindices;
+    std::vector<double> m_kappa_params;
 
         // prevent copying, no default
 
@@ -109,10 +111,11 @@ class KtildeMatrixCalculator
     void output(XMLHandler& xmlout) const;  // XML output
 
 
+    void setKtildeParameters(const std::vector<double>& kappa_params);
+
     double calculate(uint Jtimestwo, 
                      uint Lp, uint Sptimestwo, uint chanp,
                      uint L, uint Stimestwo, uint chan,
-                     const std::vector<double>& kappa_params,
                      double Ecm_over_mref) const;
 
     bool isZero(uint Jtimestwo, 
@@ -136,12 +139,13 @@ class KtildeMatrixCalculator
 
 
 
-class KtildeInverseCalculator
+class KtildeInverseCalculator : public KtildeMatrixBase
 {
 
     std::map<KElementInfo,FitForm*> m_fit;
     std::vector<KFitParamInfo> m_paraminfo;
     std::map<KFitParamInfo,uint> m_paramindices;
+    std::vector<double> m_kappa_params;
 
          // disallow copying, no default
 
@@ -174,10 +178,11 @@ class KtildeInverseCalculator
     void output(XMLHandler& xmlout) const;  // XML output
 
 
+    void setKtildeParameters(const std::vector<double>& kappa_params);
+
     double calculate(uint Jtimestwo, 
                      uint Lp, uint Sptimestwo, uint chanp,
                      uint L, uint Stimestwo, uint chan,
-                     const std::vector<double>& kappa_params,
                      double Ecm_over_mref) const;
 
     bool isZero(uint Jtimestwo, 

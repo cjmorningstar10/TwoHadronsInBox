@@ -64,6 +64,7 @@ INCS = \
   box_quant.h      \
   cmframe.h        \
   fit_forms.h      \
+  K_matrix_base.h  \
   K_matrix_calc.h  \
   K_matrix_info.h  \
   matrix.h         \
