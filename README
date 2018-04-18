@@ -23,6 +23,8 @@ An overview of this software is given in the paper below:
       SLACcitation   = "%%CITATION = ARXIV:1707.05817;%%"
 }
 
+**NOTE:** The normalization of box matrix elements was changed in https://github.com/ebatz/TwoHadronsInBox/commit/f5f372f8ffc09f217cdb2796685b1e8551251be5 compared to the above reference. The consequences for the K matrix normalization are explained in the commit message.
+
 
 See comments in the header files for information on each class
 and required XML forms.
