@@ -794,6 +794,8 @@ void BoxQuantization::assign_matrices(double E_over_mref, bool Elab, ComplexHerm
 void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix& Bh, CMatrix& B,
                                      bool Elab, bool herm)
 {
+ const double pi=3.14159265358979323846264;
+
  if (Elab)
     for (list<pair<BoxMatrix*,uint> >::const_iterator it=m_boxes.begin();it!=m_boxes.end();it++){
        it->first->setElementsFromElab(E_over_mref);}
@@ -815,7 +817,7 @@ void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix&
        else{
           BoxMatrixQuantumNumbers bqn(rt->getJtimestwo(),rt->getL(),rt->getOccurrence(),
                                       ct->getJtimestwo(),ct->getL(),ct->getOccurrence());
-          assign(bptr->getElement(bqn),row,col,herm,Bh,B);}
+          assign((bptr->getElement(bqn))/pow(m_mref_L/(2.0*pi),(rt->getL())+(ct->getL())+1),row,col,herm,Bh,B);}
        }}
 }
 
