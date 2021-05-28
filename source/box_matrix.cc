@@ -60,8 +60,8 @@ BoxMatrix::BoxMatrix(const EcmTransform &incm,  WZetaRGLCalculator& wzetacalc,
  block_id+=string("_")+s.str()+string("_")+lgirrep;
  std::map<std::string, EvaluatorPtr>::iterator eit=evaluatorMap.find(block_id);
  std::map<std::string, BlockSetupPtr>::iterator iit=blockSetupMap.find(block_id);
- if ((eit==evaluatorMap.end())||(iit==blockSetupMap.end()))
-    throw(std::runtime_error(string("Unsupported block: ")+block_id));
+ if ((eit==evaluatorMap.end())||(iit==blockSetupMap.end())){
+    m_nelem=0; return;}  // Forbidden block
  m_lgirrep=lgirrep;
  m_evalptr=eit->second;
  BlockSetupPtr m_blocksetupptr=iit->second;   

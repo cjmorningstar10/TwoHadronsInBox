@@ -6,21 +6,17 @@ An overview of this software is given in the paper below:
 
 
 @article{Morningstar:2017spu,
-      author         = "Morningstar, Colin and Bulava, John and Singha, Bijit and
-                        Brett, Ruairí and Fallica, Jacob and Hanlon, Andrew and
-                        Hörz, Ben",
-      title          = "{Estimating the two-particle $K$-matrix for multiple
-                        partial waves and decay channels from finite-volume
-                        energies}",
-      journal        = "Nucl. Phys.",
-      volume         = "B924",
+      author         = {Morningstar, Colin and Bulava, John and Singha, Bijit and
+                        Brett, Ruair\'i and Fallica, Jacob and Hanlon, Andrew and
+                        H\"orz, Ben},
+      title          = {Estimating the two-particle $K$-matrix 
+                        for multiple partial waves and decay channels 
+                        from finite-volume energies},
+      journal        = "Nucl. Phys. B",
+      volume         = "924",
       year           = "2017",
-      pages          = "477-507",
-      doi            = "10.1016/j.nuclphysb.2017.09.014",
-      eprint         = "1707.05817",
-      archivePrefix  = "arXiv",
-      primaryClass   = "hep-lat",
-      SLACcitation   = "%%CITATION = ARXIV:1707.05817;%%"
+      pages          = "477--507",
+      doi            = "10.1016/j.nuclphysb.2017.09.014"
 }
 
 **NOTE:** The normalization of box matrix elements was changed in https://github.com/ebatz/TwoHadronsInBox/commit/f5f372f8ffc09f217cdb2796685b1e8551251be5 compared to the above reference. The consequences for the K matrix normalization are explained in the commit message.

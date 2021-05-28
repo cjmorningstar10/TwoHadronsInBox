@@ -484,14 +484,19 @@ void BoxQuantization::setup_basis()
     uint Stimestwomin=std::abs(int(s1timestwo)-int(s2timestwo));
     for (uint Stimestwo=Stimestwomin;Stimestwo<=Stimestwomax;Stimestwo+=2){
        BoxMatrix *mbptr=new BoxMatrix(Ecm,*mzptr,Stimestwo,m_lgirrepB,m_Lmaxes[chan]);
-       m_boxes.push_back(make_pair(mbptr,chan));
        uint nelem=mbptr->getNumberOfIndepElements();
-       for (uint i=0;i<nelem;i++){
-          BoxMatrixQuantumNumbers bqm(mbptr->getQuantumNumbers(i));
-          m_basis.insert(BoxQuantBasisState(mbptr,chan,Stimestwo, 
-                  bqm.getRowJtimestwo(),bqm.getRowL(),bqm.getRowNocc()));
-          m_basis.insert(BoxQuantBasisState(mbptr,chan,Stimestwo, 
-                  bqm.getColumnJtimestwo(),bqm.getColumnL(),bqm.getColumnNocc()));}}}
+       if (nelem>0){
+          m_boxes.push_back(make_pair(mbptr,chan));
+          for (uint i=0;i<nelem;i++){
+             BoxMatrixQuantumNumbers bqm(mbptr->getQuantumNumbers(i));
+             m_basis.insert(BoxQuantBasisState(mbptr,chan,Stimestwo, 
+                     bqm.getRowJtimestwo(),bqm.getRowL(),bqm.getRowNocc()));
+             m_basis.insert(BoxQuantBasisState(mbptr,chan,Stimestwo, 
+                     bqm.getColumnJtimestwo(),bqm.getColumnL(),bqm.getColumnNocc()));}}
+       else{
+          delete mbptr;}}}
+ if (m_basis.empty()){
+    throw(std::invalid_argument(string("Null basis in BoxQuantization even before Kmatrix exclusions")));}
    // look for states to exclude due to K-matrix
  set<BoxQuantBasisState> exclusions;
  exclusions=find_excluded_states_from_ktilde(m_Kptr);
