@@ -54,6 +54,7 @@ BoxMatrix::BoxMatrix(const EcmTransform &incm,  WZetaRGLCalculator& wzetacalc,
     throw(std::runtime_error("Unsupported momentum ray"));
  if (total_spin_times_two>st2max){
     throw(std::runtime_error("Unsupported total spin"));}
+ m_lgirrep=lgirrep;
  m_total_spin_times_two=total_spin_times_two;
  string block_id(m_momray);
  stringstream s; s<<total_spin_times_two;
@@ -61,8 +62,7 @@ BoxMatrix::BoxMatrix(const EcmTransform &incm,  WZetaRGLCalculator& wzetacalc,
  std::map<std::string, EvaluatorPtr>::iterator eit=evaluatorMap.find(block_id);
  std::map<std::string, BlockSetupPtr>::iterator iit=blockSetupMap.find(block_id);
  if ((eit==evaluatorMap.end())||(iit==blockSetupMap.end())){
-    m_nelem=0; return;}  // Forbidden block
- m_lgirrep=lgirrep;
+    m_nelem=0; m_evalptr=0; return;}  // Forbidden block
  m_evalptr=eit->second;
  BlockSetupPtr m_blocksetupptr=iit->second;   
  (*m_blocksetupptr)(m_lmax,m_quantnums);
