@@ -400,9 +400,8 @@ class BoxQuantization
     std::list<std::pair<BoxMatrix*,uint> > m_boxes;
     std::list<WZetaRGLCalculator*> m_wzetas;
 
-    std::vector<double> m_kappa_params;
-    KtildeMatrixCalculator* m_Kmat;
-    KtildeInverseCalculator* m_Kinv;
+    KtildeMatrixBase* m_Kptr;
+    bool m_KInvMode;
 
        // Prevent copying and no default.
 
@@ -413,26 +412,15 @@ class BoxQuantization
  public:
 
     BoxQuantization(XMLHandler& xmlin,
-                    KtildeMatrixCalculator *Kmatptr);
-
-    BoxQuantization(XMLHandler& xmlin,
-                    KtildeInverseCalculator *Kinvptr);
-
-    BoxQuantization(XMLHandler& xmlin,
-                    KtildeMatrixCalculator *Kmatptr,
-                    KtildeInverseCalculator *Kinvptr);  // one of the pointers must be null
+                    KtildeMatrixBase *Kptr,
+		    bool KInvMode);
 
     BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
                     const std::string& lgirrep, 
                     const std::vector<DecayChannelInfo>& chan_infos,
                     const std::vector<uint> lmaxes,
-                    KtildeMatrixCalculator *Kmatptr);
-
-    BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
-                    const std::string& lgirrep, 
-                    const std::vector<DecayChannelInfo>& chan_infos,
-                    const std::vector<uint> lmaxes,
-                    KtildeInverseCalculator *Kinvptr);
+                    KtildeMatrixBase *Kptr,
+		    bool KInvMode);
 
     ~BoxQuantization();
 
@@ -459,8 +447,6 @@ class BoxQuantization
     void setMassesOverRef(uint channel_index, double mass1_over_ref,
                           double mass2_over_ref);
 
-    void setKtildeParameters(std::vector<double> kappa_params);
-
 
 
     double getRefMassL() const {return m_mref_L;}
@@ -472,14 +458,10 @@ class BoxQuantization
          {return m_masses2.at(channel_index);}
 
     bool isKtildeInverseMode() const
-         {return (m_Kinv!=0);}
+         {return m_KInvMode;}
 
     bool isKtildeMode() const
-         {return (m_Kmat!=0);}
-
-    uint getNumberOfKtildeParameters() const
-         {if (m_Kmat!=0) return m_Kmat->getNumberOfParameters();
-          else return m_Kinv->getNumberOfParameters();}
+         {return !m_KInvMode;}
 
 
     std::string output(int indent=0) const;  // XML output 
@@ -491,19 +473,6 @@ class BoxQuantization
     void outputBasis(XMLHandler& xmlout) const;  // XML output
 
     std::string outputBasis(int indent=0) const;  // XML output 
-
-    void outputKFitParams(XMLHandler& xmlout) const;  // XML output
-
-    std::string outputKFitParams(int indent=0) const;  // XML output 
-
-
-    const std::vector<KFitParamInfo>& getFitParameterInfos() const;
-
-    int getParameterIndex(const KFitParamInfo& kinfo) const;  // returns -1 if not found
-
-    double getParameterValue(const KFitParamInfo& kinfo) const;
-
-    std::set<KElementInfo> getElementInfos() const;
 
 
     double getEcmOverMrefFromElab(double Elab_over_mref) const;

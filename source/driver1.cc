@@ -19,24 +19,35 @@ string fname(argv[1]);
 XMLHandler xmlin;
 xmlin.set_from_file(fname);
 
-KtildeMatrixCalculator *Kmat=0;
-KtildeInverseCalculator *Kinv=0;
+KtildeMatrixBase *Kptr=0;
+bool kInvMode;
 
 int k1=xmlin.count_among_children("KtildeMatrix");
 int k2=xmlin.count_among_children("KtildeMatrixInverse");
 if ((k1+k2)!=1)
    throw(std::invalid_argument("A single KtildeMatrix or KtildeMatrixInverse tag must be present"));
 if (k1==1){
-   Kmat=new KtildeMatrixCalculator(xmlin);}
+   Kptr=new KtildeMatrixCalculator(xmlin);
+   kInvMode = false;}
 else{
-   Kinv=new KtildeInverseCalculator(xmlin);}
+   Kptr=new KtildeInverseCalculator(xmlin);
+   kInvMode = true;}
 
-if (Kmat!=0) cout <<Kmat->output()<<endl;
-else cout <<Kinv->output()<<endl;
+vector<double> Kpars;
+if (kInvMode) {
+  Kpars.resize(static_cast<KtildeInverseCalculator*>(Kptr)->getNumberOfParameters());
+  static_cast<KtildeInverseCalculator*>(Kptr)->setKtildeParameters(Kpars);
+  cout <<static_cast<KtildeInverseCalculator*>(Kptr)->output()<<endl;
+}
+else {
+  Kpars.resize(static_cast<KtildeMatrixCalculator*>(Kptr)->getNumberOfParameters());
+  static_cast<KtildeMatrixCalculator*>(Kptr)->setKtildeParameters(Kpars);
+  cout <<static_cast<KtildeMatrixCalculator*>(Kptr)->output()<<endl;
+}
 
 XMLHandler xmlb(xmlin,"BoxQuantization");
 
-BoxQuantization BQ(xmlin,Kmat,Kinv);
+BoxQuantization BQ(xmlin,Kptr,kInvMode);
 cout << BQ.output()<<endl;
 cout << BQ.outputBasis(2)<<endl;
 

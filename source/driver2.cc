@@ -18,6 +18,10 @@ pelems.push_back(make_pair( KElementInfo(10, 5,0,0, 5,0,0), Polynomial(0) ));
 KtildeInverseCalculator Kinv(pelems);
 cout << Kinv.output()<<endl;
 
+vector<double> Kpars;
+Kpars.resize(Kinv.getNumberOfParameters());
+Kinv.setKtildeParameters(Kpars);
+
 string mom_ray("ar");
 uint mom_int_sq=0;
 string lgirrep("T1u");
@@ -26,7 +30,7 @@ vector<uint> lmaxes;
 chan_infos.push_back(DecayChannelInfo("pion","pion",0,0,false,true));
 lmaxes.push_back(5);
 
-BoxQuantization BQ(mom_ray,mom_int_sq,lgirrep,chan_infos,lmaxes,&Kinv);
+BoxQuantization BQ(mom_ray,mom_int_sq,lgirrep,chan_infos,lmaxes,&Kinv, true);
 cout << BQ.output()<<endl;
 cout << BQ.outputBasis(2)<<endl;
 
