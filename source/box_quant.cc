@@ -6,125 +6,6 @@ using namespace std;
 // ****************************************************************
 
 
-DecayChannelInfo::DecayChannelInfo(const std::string& particle1_name, 
-                     const std::string& particle2_name,
-                     uint spin1_times_two, uint spin2_times_two,
-                     bool identical, bool same_intrinsic_parities)
-     : m_name1(tidyString(particle1_name)), m_name2(tidyString(particle2_name))
-{
- check_encode(spin1_times_two,spin2_times_two,identical,same_intrinsic_parities);
-}
-
-
-void DecayChannelInfo::check_encode(uint spin1_times_two, uint spin2_times_two,
-                                    bool identical, bool same_intrinsic_parities)
-{
- if ((spin1_times_two>=32768)||(spin2_times_two>=32768)
-        ||(m_name1.empty())||(m_name2.empty()))
-    throw(std::invalid_argument("Invalid DecayChannelInfo: empty name, or spin too large"));
- if ((identical)&&((m_name1!=m_name2)||(spin1_times_two!=spin2_times_two)))
-    throw(std::invalid_argument("DecayChannelInfo identical particles but different properties"));
- m_store=spin1_times_two;
- m_store<<=15; m_store|=spin2_times_two;
- m_store<<=1; if (identical) m_store|=1u;
- m_store<<=1; if (same_intrinsic_parities) m_store|=1u;
-}
-
-
-DecayChannelInfo::DecayChannelInfo(XMLHandler& xmlin)
-{
- uint spin1_times_two, spin2_times_two;
- bool identical, same_intrinsic_parities;
- try{
- XMLHandler xmlinfo(xmlin,"DecayChannelInfo");
- xmlreadchild(xmlinfo,"Particle1Name",m_name1);
- xmlreadchild(xmlinfo,"Spin1TimesTwo",spin1_times_two);
- if (xml_tag_count(xmlinfo,"Identical")>0){
-    string name2(m_name1);
-    xmlreadifchild(xmlinfo,"Particle2Name",name2);
-    uint s2=spin1_times_two;
-    xmlreadifchild(xmlinfo,"Spin2TimesTwo",s2);
-    string ipprod("same");
-    xmlreadifchild(xmlinfo,"IntrinsicParities",ipprod);
-    if ((name2!=m_name1)||(s2!=spin1_times_two)||(ipprod!="same"))
-       throw(std::invalid_argument(string("Input not consistent with identical particles")));
-    m_name2=m_name1;
-    spin2_times_two=spin1_times_two;
-    identical=true;
-    same_intrinsic_parities=true;}
- else{
-    identical=false;
-    xmlreadchild(xmlinfo,"Particle2Name",m_name2);
-    xmlreadchild(xmlinfo,"Spin2TimesTwo",spin2_times_two);
-    string reply;
-    xmlreadchild(xmlinfo,"IntrinsicParities",reply);
-    if (reply=="same") same_intrinsic_parities=true;
-    else if (reply=="opposite") same_intrinsic_parities=false;
-    else throw(std::invalid_argument("Invalid IntrinsicParities tag"));}
- check_encode(spin1_times_two,spin2_times_two,identical,same_intrinsic_parities);}
- catch(const std::exception& xp){
-    throw(std::invalid_argument(string("Invalid input to DecayChannelInfo: ")+xp.what()));}
-}
-
-
-
-DecayChannelInfo::DecayChannelInfo(const DecayChannelInfo& dcinfo)
-                : m_name1(dcinfo.m_name1), m_name2(dcinfo.m_name2),
-                  m_store(dcinfo.m_store)
-{}
-
-
-DecayChannelInfo& DecayChannelInfo::operator=(const DecayChannelInfo& dcinfo)
-{
- m_name1=dcinfo.m_name1; 
- m_name2=dcinfo.m_name2;
- m_store=dcinfo.m_store;
- return *this;
-}
-
-
-string DecayChannelInfo::output(int indent) const
-{
- XMLHandler xmlout;
- output(xmlout);
- return xmlout.output(indent);
-}
-
-
-string DecayChannelInfo::str() const
-{
- XMLHandler xmlout;
- output(xmlout);
- return xmlout.str();
-}
-
-
-void DecayChannelInfo::output(XMLHandler& xmlout) const
-{
- xmlout.set_root("DecayChannelInfo");
- xmlout.put_child("Particle1Name",m_name1);
- xmlout.put_child("Spin1TimesTwo",make_string(getSpin1timestwo()));
- if (areIdentical())
-    xmlout.put_child("Identical");
- else{
-    xmlout.put_child("Particle2Name",m_name2);
-    xmlout.put_child("Spin2TimesTwo",make_string(getSpin2timestwo()));
-    if (sameIntrinsicParities())
-       xmlout.put_child("IntrinsicParities","same");
-    else
-       xmlout.put_child("IntrinsicParities","opposite");}
-}
-
-
-ostream& operator<<(ostream& os, const DecayChannelInfo& dcinfo)  
-{  
- os << dcinfo.output();  
- return os;  
-}
-
-
-// *******************************************************************
-
 BoxQuantBasisState::BoxQuantBasisState(BoxMatrix *boxmat, uint channel_index,
                                        uint Stimestwo, uint Jtimestwo,
                                        uint L, uint occurrence)
@@ -191,11 +72,7 @@ void BoxQuantBasisState::output(XMLHandler& xmlout) const
 // *       <TotalMomentumIntSquared>2</TotalMomentumIntSquared>
 // *           [if total momentum is (2*Pi/L)(1,1,1), then IntSquared = 3]
 // *       <LGIrrep>T1u</LGIrrep>
-// *       <DecayChannel>
-// *         <DecayChannelInfo>...</DecayChannelInfo>
-// *         <Lmax>4</Lmax>
-// *       </DecayChannel>
-// *        .... (other decay channels)
+// *         <LmaxValues>4 4</LmaxValues>
 // *     </BoxQuantization>
 // *      
 
@@ -236,13 +113,10 @@ void BoxQuantization::xmlinitialize(XMLHandler& xmlin)
     xmlreadchild(xmlinfo,"TotalMomentumIntSquared",mom_int_sq);
     set_dvector(mom_int_sq);
     xmlreadchild(xmlinfo,"LGIrrep",m_lgirrep);
-    list<XMLHandler> dcxml=xmlinfo.find_among_children("DecayChannel");
-    for (list<XMLHandler>::iterator it=dcxml.begin();it!=dcxml.end();it++){
-       DecayChannelInfo dctemp(*it);
-       m_decay_infos.push_back(dctemp);
-       int lmax;
-       xmlreadchild(*it,"Lmax",lmax);
-       m_Lmaxes.push_back(lmax);}
+    uint nchan=getNumberOfDecayChannels();
+    xmlreadchild(xmlinfo,"LmaxValues",m_Lmaxes);
+    if (m_Lmaxes.size()!=nchan){
+       throw(std::invalid_argument("Size mismatch between decay infos and L-maxes"));}
     initialize();}
  catch(const std::exception& xp){
     clear();
@@ -255,11 +129,11 @@ BoxQuantization::BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
                     const std::vector<DecayChannelInfo>& chan_infos,
                     const std::vector<uint> lmaxes,
                     KtildeMatrixCalculator *Kmatptr)
-               :   m_lgirrep(lgirrep), m_momray(mom_ray), m_decay_infos(chan_infos),
+               :   m_lgirrep(lgirrep), m_momray(mom_ray),
                    m_Lmaxes(lmaxes), m_Kmat(Kmatptr), m_Kinv(0)
 {
  set_dvector(mom_int_sq);
- if (m_decay_infos.size()!=m_Lmaxes.size())
+ if (Kmatptr->getNumberOfDecayChannels()!=m_Lmaxes.size())
     throw(std::invalid_argument("Size mismatch between decay infos and L-maxes"));
  initialize();
 }
@@ -270,11 +144,11 @@ BoxQuantization::BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
                     const std::vector<DecayChannelInfo>& chan_infos,
                     const std::vector<uint> lmaxes,
                     KtildeInverseCalculator *Kinvptr)
-               :   m_lgirrep(lgirrep), m_momray(mom_ray), m_decay_infos(chan_infos),
+               :   m_lgirrep(lgirrep), m_momray(mom_ray),
                    m_Lmaxes(lmaxes), m_Kmat(0), m_Kinv(Kinvptr)
 {
  set_dvector(mom_int_sq);
- if (m_decay_infos.size()!=m_Lmaxes.size())
+ if (Kinvptr->getNumberOfDecayChannels()!=m_Lmaxes.size())
     throw(std::invalid_argument("Size mismatch between decay infos and L-maxes"));
  initialize();
 }
@@ -321,7 +195,6 @@ void BoxQuantization::set_dvector(uint mom_int_sq)
 
 void BoxQuantization::clear()
 {
- m_decay_infos.clear(); 
  m_Lmaxes.clear();
  m_masses1.clear();
  m_masses2.clear();
@@ -346,12 +219,13 @@ BoxQuantization::~BoxQuantization()
 void BoxQuantization::initialize()
 {
      // set up default values of masses; these can be changed later
- uint nchan=m_decay_infos.size();
+ const vector<DecayChannelInfo>& decay_infos=getDecayChannelInfos();
+ uint nchan=decay_infos.size();
  if (nchan==0)
     throw(std::invalid_argument("Must have at least ONE decay channel"));
- bool ipprod=m_decay_infos[0].sameIntrinsicParities();
+ bool ipprod=decay_infos[0].sameIntrinsicParities();
  for (uint a=1;a<nchan;a++){
-    if (ipprod!=m_decay_infos[a].sameIntrinsicParities())
+    if (ipprod!=decay_infos[a].sameIntrinsicParities())
        throw(std::invalid_argument("All channels must have same product of intrinsic parities"));}
  if (ipprod)
     m_lgirrepB=m_lgirrep;
@@ -364,8 +238,6 @@ void BoxQuantization::initialize()
     m_masses1[k]=m_masses2[k]=1.0;   // arbitrary default values
    // set up the basis states
  setup_basis();
-   // initialize size of parameters
- m_kappa_params.resize(getNumberOfKtildeParameters());
 }
 
 
@@ -374,9 +246,10 @@ void BoxQuantization::setRefMassL(double mref_L)
  if (mref_L<=0.0)
     throw(std::invalid_argument("Unsupported reference mass: zero or negative"));
  m_mref_L=mref_L;
+ const vector<DecayChannelInfo>& decay_infos=getDecayChannelInfos();
  for (list<pair<BoxMatrix*,uint> >::iterator it=m_boxes.begin();it!=m_boxes.end();it++){
     uint chan=it->second;
-    if (m_decay_infos[chan].areIdentical())
+    if (decay_infos[chan].areIdentical())
        it->first->resetMasses(m_mref_L,m_masses1[chan]);
     else
        it->first->resetMasses(m_mref_L,m_masses1[chan],m_masses2[chan]);}
@@ -390,23 +263,16 @@ void BoxQuantization::setMassesOverRef(uint channel_index, double mass1_over_ref
     throw(std::invalid_argument("Unsupported particle masses: zero or negative"));
  m_masses1.at(channel_index)=mass1_over_ref;
  m_masses2.at(channel_index)=mass2_over_ref;
+ const vector<DecayChannelInfo>& decay_infos=getDecayChannelInfos();
  for (list<pair<BoxMatrix*,uint> >::iterator it=m_boxes.begin();it!=m_boxes.end();it++){
     uint chan=it->second;
     if (chan==channel_index){
-       if (m_decay_infos[chan].areIdentical()){
+       if (decay_infos[chan].areIdentical()){
           if (mass1_over_ref!=mass2_over_ref)
              throw(std::invalid_argument("Identical particles cannot have different masses"));
           it->first->resetMasses(m_mref_L,m_masses1[chan]);}
        else
           it->first->resetMasses(m_mref_L,m_masses1[chan],m_masses2[chan]);}}
-}
-
-
-void BoxQuantization::setKtildeParameters(std::vector<double> kappa_params)
-{
- if (kappa_params.size()!=getNumberOfKtildeParameters())
-    throw(std::invalid_argument("Could not set KtildeParameters"));
- m_kappa_params=kappa_params;
 }
 
 
@@ -432,13 +298,7 @@ void BoxQuantization::output(XMLHandler& xmlout) const
  xmlout.put_child("TotalMomentumRay",getMomRay());
  xmlout.put_child("TotalMomentumIntSquared",make_string(getTotalMomentumIntegerSquared()));
  xmlout.put_child("LGIrrep",getLittleGroupIrrep());
- uint nchan=m_decay_infos.size();
- for (uint chan=0;chan<nchan;chan++){
-    XMLHandler xmlci; m_decay_infos[chan].output(xmlci);
-    XMLHandler xmlc("DecayChannel");
-    xmlc.put_child(xmlci);
-    xmlc.put_child("Lmax",make_string(m_Lmaxes[chan]));
-    xmlout.put_child(xmlc);}
+ xmlout.put_child("LmaxValues",make_string(m_Lmaxes));
 }
 
 
@@ -457,6 +317,36 @@ string BoxQuantization::outputBasis(int indent) const
  XMLHandler xmlout;
  outputBasis(xmlout);
  return xmlout.output(indent);
+}
+
+    // returns key with name "B[momray,Psqint,IrrepB,2S,chan][2J',L',n'][2J,L,n]"
+
+std::string BoxQuantization::getKeyString(int row, int col) const  
+{
+ if ((row<0)||(col<0)||(row>=int(m_basis.size()))||(col>=int(m_basis.size())))
+    throw(std::invalid_argument("Bad indices in BoxQuantization::getKey"));
+ std::set<BoxQuantBasisState>::iterator itrow,itcol;
+ itrow=m_basis.begin(); itcol=m_basis.begin();
+ for (int k=0;k<row;++k) ++itrow;
+ for (int k=0;k<col;++k) ++itcol;
+ uint chanrow=itrow->getChannelIndex();
+ uint twoSrow=itrow->getStimestwo();
+ uint twoJrow=itrow->getJtimestwo();
+ uint Lrow=itrow->getL();
+ uint noccrow=itrow->getOccurrence();
+ uint chancol=itcol->getChannelIndex();
+ uint twoScol=itcol->getStimestwo();
+ uint twoJcol=itcol->getJtimestwo();
+ uint Lcol=itcol->getL();
+ uint nocccol=itcol->getOccurrence();
+ if ((chanrow!=chancol)||(twoSrow!=twoScol))
+    throw(std::invalid_argument("Bad S,a in BoxQuantization::getKey"));
+ string keyname("B[");
+ keyname+=getMomRay()+","+make_string(getTotalMomentumIntegerSquared())+","+getLittleGroupBoxIrrep();
+ keyname+=","+make_string(twoSrow)+","+make_string(chanrow)+"]";
+ keyname+="["+make_string(twoJrow)+","+make_string(Lrow)+","+make_string(noccrow)+"]";
+ keyname+="["+make_string(twoJcol)+","+make_string(Lcol)+","+make_string(nocccol)+"]";
+ return keyname;
 }
 
 
@@ -498,9 +388,10 @@ int BoxQuantization::getParameterIndex(const KFitParamInfo& kinfo) const  // ret
 
 double BoxQuantization::getParameterValue(const KFitParamInfo& kinfo) const
 {
- if (m_Kmat) return m_kappa_params.at(m_Kmat->getParameterIndex(kinfo));
- else return m_kappa_params.at(m_Kinv->getParameterIndex(kinfo));
+ if (m_Kmat) return m_Kmat->getParameterValue(kinfo);
+ else return m_Kinv->getParameterValue(kinfo);
 }
+
 
 set<KElementInfo> BoxQuantization::getElementInfos() const
 {
@@ -563,13 +454,14 @@ string BoxQuantization::getLGIrrepParityFlip()
 
 void BoxQuantization::setup_basis()
 {
- uint nchan=m_decay_infos.size();
+ const vector<DecayChannelInfo>& decay_infos=getDecayChannelInfos();
+ uint nchan=decay_infos.size();
  for (uint chan=0;chan<nchan;chan++){
     EcmTransform Ecm(m_dx,m_dy,m_dz,m_mref_L,m_masses1[chan],m_masses2[chan]);
     WZetaRGLCalculator* mzptr=new WZetaRGLCalculator;
     m_wzetas.push_back(mzptr);
-    uint s1timestwo=m_decay_infos[chan].getSpin1timestwo();
-    uint s2timestwo=m_decay_infos[chan].getSpin2timestwo();
+    uint s1timestwo=decay_infos[chan].getSpin1timestwo();
+    uint s2timestwo=decay_infos[chan].getSpin2timestwo();
     uint Stimestwomax=s1timestwo+s2timestwo;
     uint Stimestwomin=std::abs(int(s1timestwo)-int(s2timestwo));
     for (uint Stimestwo=Stimestwomin;Stimestwo<=Stimestwomax;Stimestwo+=2){
@@ -621,6 +513,14 @@ double BoxQuantization::getEcmOverMrefFromElab(double Elab_over_mref) const
  return m_boxes.front().first->getEcmOverMrefFromElab(Elab_over_mref);
 }
 
+
+void BoxQuantization::getQcmsqOverMrefsqFromElab(double Elab_over_mref, RVector& qcmsq_over_mrefsq) const
+{
+ uint nchan=getNumberOfDecayChannels();
+ qcmsq_over_mrefsq.resize(nchan);
+ for (std::list<std::pair<BoxMatrix*,uint> >::const_iterator it=m_boxes.begin();it!=m_boxes.end();++it){
+    qcmsq_over_mrefsq[it->second]=it->first->getQcmsqOverMrefsqFromElab(Elab_over_mref);}
+}
 
 
 void BoxQuantization::getBoxMatrixFromElab(double Elab_over_mref, ComplexHermitianMatrix& B)
@@ -902,6 +802,7 @@ void BoxQuantization::assign_matrices(double E_over_mref, bool Elab, ComplexHerm
 void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix& Bh, CMatrix& B,
                                      bool Elab, bool herm)
 {
+ const double twopi=6.28318530717958647692528;
  if (Elab)
     for (list<pair<BoxMatrix*,uint> >::const_iterator it=m_boxes.begin();it!=m_boxes.end();it++){
        it->first->setElementsFromElab(E_over_mref);}
@@ -923,7 +824,9 @@ void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix&
        else{
           BoxMatrixQuantumNumbers bqn(rt->getJtimestwo(),rt->getL(),rt->getOccurrence(),
                                       ct->getJtimestwo(),ct->getL(),ct->getOccurrence());
-          assign(bptr->getElement(bqn),row,col,herm,Bh,B);}
+   //       assign(bptr->getElement(bqn),row,col,herm,Bh,B);}
+          assign((bptr->getElement(bqn))/pow(m_mref_L/twopi,(rt->getL())+(ct->getL())+1),
+                   row,col,herm,Bh,B);}
        }}
 }
 
@@ -944,12 +847,15 @@ void BoxQuantization::get_ktilde_matrix(double E_over_mref, RealSymmetricMatrix&
  for (set<BoxQuantBasisState>::iterator rt=m_basis.begin();rt!=m_basis.end();rt++,row++){
     uint col=0;
     for (set<BoxQuantBasisState>::iterator ct=m_basis.begin();ct!=m_basis.end();ct++,col++){
-       if ((rt->getJtimestwo()!=ct->getJtimestwo())||(rt->getOccurrence()!=ct->getOccurrence()))
-          assign(0.0,row,col,herm,Kh,K);
+       if ((rt->getJtimestwo()!=ct->getJtimestwo())||(rt->getOccurrence()!=ct->getOccurrence())
+          ||(evalptr->isZero(rt->getJtimestwo(),
+                              rt->getL(),rt->getStimestwo(),rt->getChannelIndex(),
+                              ct->getL(),ct->getStimestwo(),ct->getChannelIndex()))){
+          assign(0.0,row,col,herm,Kh,K);}
        else{
           double kres=evalptr->calculate(rt->getJtimestwo(),
                           rt->getL(),rt->getStimestwo(),rt->getChannelIndex(),
-                          ct->getL(),ct->getStimestwo(),ct->getChannelIndex(),m_kappa_params,Ecm); 
+                          ct->getL(),ct->getStimestwo(),ct->getChannelIndex(),Ecm); 
           assign(kres,row,col,herm,Kh,K);}
        }}
 }
