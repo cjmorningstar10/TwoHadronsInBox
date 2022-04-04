@@ -570,7 +570,7 @@ void BoxQuantization::setup_basis()
     m_wzetas.push_back(mzptr);
     uint s1timestwo=m_decay_infos[chan].getSpin1timestwo();
     uint s2timestwo=m_decay_infos[chan].getSpin2timestwo();
-    uint Stimestwomax=s1timestwo+s2timestwo;
+    uint Stimestwomax=min(s1timestwo+s2timestwo, BoxMatrix::getTotalSpinTimesTwoMax(Ecm));
     uint Stimestwomin=std::abs(int(s1timestwo)-int(s2timestwo));
     for (uint Stimestwo=Stimestwomin;Stimestwo<=Stimestwomax;Stimestwo+=2){
        BoxMatrix *mbptr=new BoxMatrix(Ecm,*mzptr,Stimestwo,m_lgirrepB,m_Lmaxes[chan]);

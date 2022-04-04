@@ -35,26 +35,25 @@ BoxMatrix::BoxMatrix(const EcmTransform &incm,  WZetaRGLCalculator& wzetacalc,
  uint st2max=0;
  vector<int> dvec(incm.getdvec());
  if ((dvec[0]==0)&&(dvec[1]==0)&&(dvec[2]==0)){
-    m_momray="ar"; st2max=4;
+    m_momray="ar"; st2max=AR_SX2MAX;
     if (Lmax>AR_LMAX)
        throw(std::runtime_error("Increase AR_LMAX macro"));}
  else if ((dvec[0]==0)&&(dvec[1]==0)&&(dvec[2]>0)){
-    m_momray="oa"; st2max=4;
+    m_momray="oa"; st2max=OA_SX2MAX;
     if (Lmax>OA_LMAX)
        throw(std::runtime_error("Increase OA_LMAX macro"));}
  else if ((dvec[0]==0)&&(dvec[1]>0)&&(dvec[2]==dvec[1])){
-    m_momray="pd"; st2max=3;
+    m_momray="pd"; st2max=PD_SX2MAX;
     if (Lmax>PD_LMAX)
        throw(std::runtime_error("Increase PD_LMAX macro"));}
  else if ((dvec[0]>0)&&(dvec[1]==dvec[0])&&(dvec[2]==dvec[0])){
-    m_momray="cd"; st2max=3;
+    m_momray="cd"; st2max=CD_SX2MAX;
     if (Lmax>CD_LMAX)
        throw(std::runtime_error("Increase CD_LMAX macro"));}
  else
     throw(std::runtime_error("Unsupported momentum ray"));
  if (total_spin_times_two>st2max){
     throw(std::runtime_error("Unsupported total spin"));}
- m_lgirrep=lgirrep;
  m_total_spin_times_two=total_spin_times_two;
  string block_id(m_momray);
  stringstream s; s<<total_spin_times_two;
@@ -63,6 +62,7 @@ BoxMatrix::BoxMatrix(const EcmTransform &incm,  WZetaRGLCalculator& wzetacalc,
  std::map<std::string, BlockSetupPtr>::iterator iit=blockSetupMap.find(block_id);
  if ((eit==evaluatorMap.end())||(iit==blockSetupMap.end())){
     m_nelem=0; m_evalptr=0; return;}  // Forbidden block
+ m_lgirrep=lgirrep;
  m_evalptr=eit->second;
  BlockSetupPtr m_blocksetupptr=iit->second;   
  (*m_blocksetupptr)(m_lmax,m_quantnums);
@@ -191,6 +191,24 @@ void BoxMatrix::getElementsFromQcmsq(double qcmsq_over_mrefsq, std::vector<cmplx
  setElementsFromQcmsq(qcmsq_over_mrefsq);
  results=m_results;
 }
+
+uint BoxMatrix::getTotalSpinTimesTwoMax(const EcmTransform &incm)
+{
+ uint st2max=0;
+ vector<int> dvec(incm.getdvec());
+ if ((dvec[0]==0)&&(dvec[1]==0)&&(dvec[2]==0)){
+    st2max=AR_SX2MAX;}
+ else if ((dvec[0]==0)&&(dvec[1]==0)&&(dvec[2]>0)){
+    st2max=OA_SX2MAX;}
+ else if ((dvec[0]==0)&&(dvec[1]>0)&&(dvec[2]==dvec[1])){
+    st2max=PD_SX2MAX;}
+ else if ((dvec[0]>0)&&(dvec[1]==dvec[0])&&(dvec[2]==dvec[0])){
+    st2max=CD_SX2MAX;}
+ else
+    throw(std::runtime_error("Unsupported momentum ray"));
+ return st2max;
+}
+
 
 map<string, BoxMatrix::EvaluatorPtr> BoxMatrix::initializeEvalPtrs()
 {

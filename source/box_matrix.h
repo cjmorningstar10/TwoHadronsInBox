@@ -271,7 +271,7 @@ class BoxMatrix
     std::string getLittleGroupIrrep() const {return m_lgirrep;}
 
     uint getTotalSpinTimesTwo() const {return m_total_spin_times_two;}
-
+    
     uint getLmax() const {return m_lmax;}
 
     uint getNumberOfIndepElements() const {return m_nelem;}
@@ -303,6 +303,8 @@ class BoxMatrix
     void getElementsFromEcm(double Ecm_over_mref, std::vector<cmplx>& results);
 
     void getElementsFromQcmsq(double qcmsq_over_mrefsq, std::vector<cmplx>& results);
+
+    static uint getTotalSpinTimesTwoMax(const EcmTransform &incm);
 
 
  private:
