@@ -200,29 +200,10 @@ void BoxQuantBasisState::output(XMLHandler& xmlout) const
 // *      
 
 BoxQuantization::BoxQuantization(XMLHandler& xmlin,
-                                 KtildeMatrixCalculator *Kmatptr)
-               :   m_Kmat(Kmatptr), m_Kinv(0)
+                                 KtildeMatrixBase *Kmatptr,
+				 bool KInvMode)
+               :   m_Kptr(Kmatptr), m_KInvMode(KInvMode)
 {
- xmlinitialize(xmlin);
-}
-
-
-BoxQuantization::BoxQuantization(XMLHandler& xmlin,
-                                 KtildeInverseCalculator *Kinvptr)
-               :   m_Kmat(0), m_Kinv(Kinvptr)
-{
- xmlinitialize(xmlin);
-}
-
-
-BoxQuantization::BoxQuantization(XMLHandler& xmlin,
-                                 KtildeMatrixCalculator *Kmatptr,
-                                 KtildeInverseCalculator *Kinvptr)
-               :   m_Kmat(Kmatptr), m_Kinv(Kinvptr)
-{
- if ((m_Kmat!=0)&&(m_Kinv!=0))
-    throw(std::invalid_argument(string("One of the pointers must be null in BoxQuantization constructor with ")
-               +string("KtildeMatrixCalculator and KtildeInverseCalculator pointers")));
  xmlinitialize(xmlin);
 }
 
@@ -254,24 +235,10 @@ BoxQuantization::BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
                     const std::string& lgirrep, 
                     const std::vector<DecayChannelInfo>& chan_infos,
                     const std::vector<uint> lmaxes,
-                    KtildeMatrixCalculator *Kmatptr)
+                    KtildeMatrixBase *Kmatptr,
+		    bool KInvMode)
                :   m_lgirrep(lgirrep), m_momray(mom_ray), m_decay_infos(chan_infos),
-                   m_Lmaxes(lmaxes), m_Kmat(Kmatptr), m_Kinv(0)
-{
- set_dvector(mom_int_sq);
- if (m_decay_infos.size()!=m_Lmaxes.size())
-    throw(std::invalid_argument("Size mismatch between decay infos and L-maxes"));
- initialize();
-}
-
-
-BoxQuantization::BoxQuantization(const std::string& mom_ray, uint mom_int_sq,
-                    const std::string& lgirrep, 
-                    const std::vector<DecayChannelInfo>& chan_infos,
-                    const std::vector<uint> lmaxes,
-                    KtildeInverseCalculator *Kinvptr)
-               :   m_lgirrep(lgirrep), m_momray(mom_ray), m_decay_infos(chan_infos),
-                   m_Lmaxes(lmaxes), m_Kmat(0), m_Kinv(Kinvptr)
+                   m_Lmaxes(lmaxes), m_Kptr(Kmatptr), m_KInvMode(KInvMode)
 {
  set_dvector(mom_int_sq);
  if (m_decay_infos.size()!=m_Lmaxes.size())
@@ -364,8 +331,6 @@ void BoxQuantization::initialize()
     m_masses1[k]=m_masses2[k]=1.0;   // arbitrary default values
    // set up the basis states
  setup_basis();
-   // initialize size of parameters
- m_kappa_params.resize(getNumberOfKtildeParameters());
 }
 
 
@@ -402,12 +367,6 @@ void BoxQuantization::setMassesOverRef(uint channel_index, double mass1_over_ref
 }
 
 
-void BoxQuantization::setKtildeParameters(std::vector<double> kappa_params)
-{
- if (kappa_params.size()!=getNumberOfKtildeParameters())
-    throw(std::invalid_argument("Could not set KtildeParameters"));
- m_kappa_params=kappa_params;
-}
 
 
 string BoxQuantization::output(int indent) const
@@ -457,55 +416,6 @@ string BoxQuantization::outputBasis(int indent) const
  XMLHandler xmlout;
  outputBasis(xmlout);
  return xmlout.output(indent);
-}
-
-
-void BoxQuantization::outputKFitParams(XMLHandler& xmlout) const  // XML output
-{
- xmlout.set_root("BoxQuantizationKFitParams");
- const std::vector<KFitParamInfo>& fref=getFitParameterInfos();
- for (std::vector<KFitParamInfo>::const_iterator it=fref.begin();it!=fref.end();it++){
-    XMLHandler xmlk;
-    it->output(xmlk);
-    xmlout.put_child(xmlk);}
-}
-
-
-std::string BoxQuantization::outputKFitParams(int indent) const // XML output 
-{
- XMLHandler xmlout;
- outputKFitParams(xmlout);
- return xmlout.output(indent);
-}
-
-
-
-
-
-const std::vector<KFitParamInfo>& BoxQuantization::getFitParameterInfos() const
-{
- if (m_Kmat) return m_Kmat->getFitParameterInfos();
- else return m_Kinv->getFitParameterInfos();
-}
-
-
-int BoxQuantization::getParameterIndex(const KFitParamInfo& kinfo) const  // returns -1 if not found
-{
- if (m_Kmat) return m_Kmat->getParameterIndex(kinfo);
- else return m_Kinv->getParameterIndex(kinfo);
-}
-
-
-double BoxQuantization::getParameterValue(const KFitParamInfo& kinfo) const
-{
- if (m_Kmat) return m_kappa_params.at(m_Kmat->getParameterIndex(kinfo));
- else return m_kappa_params.at(m_Kinv->getParameterIndex(kinfo));
-}
-
-set<KElementInfo> BoxQuantization::getElementInfos() const
-{
- if (m_Kmat) return m_Kmat->getElementInfos();
- else return m_Kinv->getElementInfos();
 }
 
 
@@ -589,8 +499,7 @@ void BoxQuantization::setup_basis()
     throw(std::invalid_argument(string("Null basis in BoxQuantization even before Kmatrix exclusions")));}
    // look for states to exclude due to K-matrix
  set<BoxQuantBasisState> exclusions;
- if (m_Kmat!=0) exclusions=find_excluded_states_from_ktilde(m_Kmat);
- else exclusions=find_excluded_states_from_ktilde(m_Kinv);
+ exclusions=find_excluded_states_from_ktilde(m_Kptr);
    // if ALL states excluded, this means Kmatrix is zero; end user needs to know
    // which K matrix elements should be set; throw this information
  if (exclusions.size()==m_basis.size()){
@@ -654,105 +563,93 @@ void BoxQuantization::getBoxMatrixFromEcm(double Ecm_over_mref, CMatrix& B)
 
 void BoxQuantization::getKtildeFromElab(double Elab_over_mref, RealSymmetricMatrix& Ktilde)
 {
- if (m_Kmat==0) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
+ if (m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
  RMatrix dummy;
- get_ktilde_matrix(Elab_over_mref,Ktilde,dummy,true,true,m_Kmat);
+ get_ktilde_matrix(Elab_over_mref,Ktilde,dummy,true,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeFromElab(double Elab_over_mref, RMatrix& Ktilde)
 {
- if (m_Kmat==0) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
+ if (m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
  RealSymmetricMatrix dummy;
- get_ktilde_matrix(Elab_over_mref,dummy,Ktilde,true,false,m_Kmat);
+ get_ktilde_matrix(Elab_over_mref,dummy,Ktilde,true,false,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeFromEcm(double Ecm_over_mref, RealSymmetricMatrix& Ktilde)
 {
- if (m_Kmat==0) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
+ if (m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
  RMatrix dummy;
- get_ktilde_matrix(Ecm_over_mref,Ktilde,dummy,false,true,m_Kmat);
+ get_ktilde_matrix(Ecm_over_mref,Ktilde,dummy,false,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeFromEcm(double Ecm_over_mref, RMatrix& Ktilde)
 {
- if (m_Kmat==0) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
+ if (m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktilde in Ktildeinverse mode"));
  RealSymmetricMatrix dummy;
- get_ktilde_matrix(Ecm_over_mref,dummy,Ktilde,false,false,m_Kmat);
+ get_ktilde_matrix(Ecm_over_mref,dummy,Ktilde,false,false,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeinvFromElab(double Elab_over_mref, RealSymmetricMatrix& Ktildeinv)
 {
- if (m_Kinv==0) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
+ if (!m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
  RMatrix dummy;
- get_ktilde_matrix(Elab_over_mref,Ktildeinv,dummy,true,true,m_Kinv);
+ get_ktilde_matrix(Elab_over_mref,Ktildeinv,dummy,true,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeinvFromElab(double Elab_over_mref, RMatrix& Ktildeinv)
 {
- if (m_Kinv==0) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
+ if (!m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
  RealSymmetricMatrix dummy;
- get_ktilde_matrix(Elab_over_mref,dummy,Ktildeinv,true,false,m_Kinv);
+ get_ktilde_matrix(Elab_over_mref,dummy,Ktildeinv,true,false,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeinvFromEcm(double Ecm_over_mref, RealSymmetricMatrix& Ktildeinv)
 {
- if (m_Kinv==0) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
+ if (!m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
  RMatrix dummy;
- get_ktilde_matrix(Ecm_over_mref,Ktildeinv,dummy,false,true,m_Kinv);
+ get_ktilde_matrix(Ecm_over_mref,Ktildeinv,dummy,false,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeinvFromEcm(double Ecm_over_mref, RMatrix& Ktildeinv)
 {
- if (m_Kinv==0) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
+ if (!m_KInvMode) throw(std::runtime_error("Cannot evaluate Ktildeinverse in Ktilde mode"));
  RealSymmetricMatrix dummy;
- get_ktilde_matrix(Ecm_over_mref,dummy,Ktildeinv,false,false,m_Kinv);
+ get_ktilde_matrix(Ecm_over_mref,dummy,Ktildeinv,false,false,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeOrInverseFromElab(double Elab_over_mref, RealSymmetricMatrix& KtildeOrInverse)
 {
  RMatrix dummy;
- if (m_Kmat!=0)
-    get_ktilde_matrix(Elab_over_mref,KtildeOrInverse,dummy,true,true,m_Kmat);
- else
-    get_ktilde_matrix(Elab_over_mref,KtildeOrInverse,dummy,true,true,m_Kinv);
+ get_ktilde_matrix(Elab_over_mref,KtildeOrInverse,dummy,true,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeOrInverseFromElab(double Elab_over_mref, RMatrix& KtildeOrInverse)
 {
  RealSymmetricMatrix dummy;
- if (m_Kmat!=0)
-    get_ktilde_matrix(Elab_over_mref,dummy,KtildeOrInverse,true,false,m_Kmat);
- else
-    get_ktilde_matrix(Elab_over_mref,dummy,KtildeOrInverse,true,false,m_Kinv);
+ get_ktilde_matrix(Elab_over_mref,dummy,KtildeOrInverse,true,false,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeOrInverseFromEcm(double Ecm_over_mref, RealSymmetricMatrix& KtildeOrInverse)
 {
  RMatrix dummy;
- if (m_Kmat!=0)
-    get_ktilde_matrix(Ecm_over_mref,KtildeOrInverse,dummy,false,true,m_Kmat);
- else
-    get_ktilde_matrix(Ecm_over_mref,KtildeOrInverse,dummy,false,true,m_Kinv);
+ get_ktilde_matrix(Ecm_over_mref,KtildeOrInverse,dummy,false,true,m_Kptr);
 }
 
 
 void BoxQuantization::getKtildeOrInverseFromEcm(double Ecm_over_mref, RMatrix& KtildeOrInverse)
 {
  RealSymmetricMatrix dummy;
- if (m_Kmat!=0)
-    get_ktilde_matrix(Ecm_over_mref,dummy,KtildeOrInverse,false,false,m_Kmat);
- else
-    get_ktilde_matrix(Ecm_over_mref,dummy,KtildeOrInverse,false,false,m_Kinv);
+ get_ktilde_matrix(Ecm_over_mref,dummy,KtildeOrInverse,false,false,m_Kptr);
 }
 
 
@@ -885,16 +782,16 @@ void BoxQuantization::assign_matrices(double E_over_mref, bool Elab, ComplexHerm
 {
  if (Elab){
     getBoxMatrixFromElab(E_over_mref,B);
-    if (m_Kmat!=0)
-       getKtildeFromElab(E_over_mref,Kv);
+    if (m_KInvMode)
+       getKtildeinvFromElab(E_over_mref,Kv);
     else
-       getKtildeinvFromElab(E_over_mref,Kv);}
+       getKtildeFromElab(E_over_mref,Kv);}
  else{
     getBoxMatrixFromEcm(E_over_mref,B);
-    if (m_Kmat!=0)
-       getKtildeFromEcm(E_over_mref,Kv);
+    if (m_KInvMode)
+       getKtildeinvFromEcm(E_over_mref,Kv);
     else
-       getKtildeinvFromEcm(E_over_mref,Kv);}
+       getKtildeFromEcm(E_over_mref,Kv);}
 }
 
 
@@ -902,6 +799,8 @@ void BoxQuantization::assign_matrices(double E_over_mref, bool Elab, ComplexHerm
 void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix& Bh, CMatrix& B,
                                      bool Elab, bool herm)
 {
+ const double pi=3.14159265358979323846264;
+
  if (Elab)
     for (list<pair<BoxMatrix*,uint> >::const_iterator it=m_boxes.begin();it!=m_boxes.end();it++){
        it->first->setElementsFromElab(E_over_mref);}
@@ -923,7 +822,7 @@ void BoxQuantization::get_box_matrix(double E_over_mref, ComplexHermitianMatrix&
        else{
           BoxMatrixQuantumNumbers bqn(rt->getJtimestwo(),rt->getL(),rt->getOccurrence(),
                                       ct->getJtimestwo(),ct->getL(),ct->getOccurrence());
-          assign(bptr->getElement(bqn),row,col,herm,Bh,B);}
+          assign((bptr->getElement(bqn))/pow(m_mref_L/(2.0*pi),(rt->getL())+(ct->getL())+1),row,col,herm,Bh,B);}
        }}
 }
 
@@ -952,7 +851,7 @@ void BoxQuantization::get_ktilde_matrix(double E_over_mref, RealSymmetricMatrix&
        else{
           double kres=evalptr->calculate(rt->getJtimestwo(),
                           rt->getL(),rt->getStimestwo(),rt->getChannelIndex(),
-                          ct->getL(),ct->getStimestwo(),ct->getChannelIndex(),m_kappa_params,Ecm); 
+                          ct->getL(),ct->getStimestwo(),ct->getChannelIndex(),Ecm); 
           assign(kres,row,col,herm,Kh,K);}
        }}
 }
@@ -986,10 +885,10 @@ void BoxQuantization::output_matrices(double E_over_mref, bool Elab, std::ostrea
  string Kname;
  if (Elab){
     fout << "Elab:="<<E_over_mref<<":"<<endl;
-    Kname=(m_Kmat!=0) ? "Ktilde" : "Ktildeinv";}
+    Kname=(m_KInvMode) ? "Ktildeinv" : "Ktilde";}
  else{
     fout << "Ecm:="<<E_over_mref<<":"<<endl;
-    Kname=(m_Kmat!=0) ? "Ktilde" : "Ktildeinv";}
+    Kname=(m_KInvMode) ? "Ktildeinv" : "Ktilde";}
  uint row=0;
  for (set<BoxQuantBasisState>::iterator rt=m_basis.begin();rt!=m_basis.end();rt++,row++){
     uint ap=rt->getChannelIndex();
@@ -1042,7 +941,7 @@ double BoxQuantization::get_determinant(uint N, const RealSymmetricMatrix& Kv,
                                         const ComplexHermitianMatrix& B, uint Ndet)
 {
  RealDeterminantRoot DR;
- if (m_Kinv!=0){                       //   det( Kinv - B )
+ if (m_KInvMode){                       //   det( Kinv - B )
     ComplexHermitianMatrix Q(N);
     for (uint row=0;row<N;row++)
     for (uint col=row;col<N;col++)
@@ -1063,7 +962,7 @@ std::vector<double> BoxQuantization::get_eigenvalues(double E_over_mref, bool El
  assign_matrices(E_over_mref,Elab,B,Kv);
  uint N=B.size();
  ComplexHermitianMatrix Q(N);
- if (m_Kinv!=0){                       //   Q = Kinv - B
+ if (m_KInvMode){                       //   Q = Kinv - B
     for (uint row=0;row<N;row++)
     for (uint col=row;col<N;col++)
        Q.put(row,col,Kv(row,col)-B(row,col));
@@ -1111,7 +1010,7 @@ double BoxQuantization::get_omega(double mu, uint N, const RealSymmetricMatrix& 
                                   const ComplexHermitianMatrix& B)
 {
  RealDeterminantRoot DR;
- if (m_Kinv!=0){                       //   det( Kinv - B )
+ if (m_KInvMode){                       //   det( Kinv - B )
     ComplexHermitianMatrix Q(N);
     for (uint row=0;row<N;row++)
     for (uint col=row;col<N;col++)

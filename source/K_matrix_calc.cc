@@ -172,18 +172,25 @@ KtildeMatrixCalculator::KtildeMatrixCalculator(const std::list<std::pair<KElemen
 }
 
 
+void KtildeMatrixCalculator::setKtildeParameters(const std::vector<double>& kappa_params)
+{
+ if (kappa_params.size()!=getNumberOfParameters())
+    throw(std::invalid_argument("Could not set KtildeParameters"));
+ m_kappa_params=kappa_params;
+}
+
+
 double KtildeMatrixCalculator::calculate(uint Jtimestwo, 
                        uint Lp, uint Sptimestwo, uint chanp,
                        uint L, uint Stimestwo, uint chan, 
-                       const vector<double>& kappa,
                        double Ecm_over_mref) const
 {
- if (kappa.size()<m_paraminfo.size())
+ if (m_kappa_params.size()<m_paraminfo.size())
     throw(std::invalid_argument("Insufficient number of parameter values in KtildeMatrixCalculator::calculate"));
  KElementInfo kelem(Jtimestwo,Lp,Sptimestwo,chanp,L,Stimestwo,chan);
  std::map<KElementInfo,FitForm*>::const_iterator it=m_fit.find(kelem);
  if (it==m_fit.end()) return 0.0;
- return (it->second)->evaluate(kappa,Ecm_over_mref);
+ return (it->second)->evaluate(m_kappa_params,Ecm_over_mref);
 }
 
 
@@ -343,18 +350,25 @@ KtildeInverseCalculator::KtildeInverseCalculator(const std::list<std::pair<KElem
 }
 
 
+void KtildeInverseCalculator::setKtildeParameters(const std::vector<double>& kappa_params)
+{
+ if (kappa_params.size()!=getNumberOfParameters())
+    throw(std::invalid_argument("Could not set KtildeInvParameters"));
+ m_kappa_params=kappa_params;
+}
+
+
 double KtildeInverseCalculator::calculate(uint Jtimestwo, 
                        uint Lp, uint Sptimestwo, uint chanp,
                        uint L, uint Stimestwo, uint chan, 
-                       const vector<double>& kappa,
                        double Ecm_over_mref) const
 {
- if (kappa.size()<m_paraminfo.size())
+ if (m_kappa_params.size()<m_paraminfo.size())
     throw(std::invalid_argument("Insufficient number of parameter values in KtildeInverseCalculator::calculate"));
  KElementInfo kelem(Jtimestwo,Lp,Sptimestwo,chanp,L,Stimestwo,chan);
  std::map<KElementInfo,FitForm*>::const_iterator it=m_fit.find(kelem);
  if (it==m_fit.end()) return 0.0;
- return (it->second)->evaluate(kappa,Ecm_over_mref);
+ return (it->second)->evaluate(m_kappa_params,Ecm_over_mref);
 }
 
 
